@@ -3,6 +3,7 @@ import pygame
 from RoutineFunctions import load_image, terminate
 from GameDatabase import Database
 
+
 class StartScreens:
     def __init__(self, SIZE, screen):
         self.SIZE = SIZE
@@ -195,7 +196,7 @@ class StartScreens:
             pygame.time.Clock().tick(60)
 
     def set_background(self):
-        background = pygame.transform.scale(load_image('StartScreenBG.jpg'), self.SIZE)
+        background = pygame.transform.scale(load_image('StartScreenBG.jpg', 'BGs'), self.SIZE)
         alpha_surface = pygame.Surface(self.SIZE)
         alpha_surface.fill((0, 0, 0))
         alpha_surface.set_alpha(150)

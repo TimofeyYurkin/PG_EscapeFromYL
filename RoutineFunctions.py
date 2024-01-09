@@ -3,8 +3,8 @@ import sys
 import pygame
 
 
-def load_image(name):
-    fullname = os.path.join('data', name)
+def load_image(name, directory):
+    fullname = os.path.join(f'data/{directory}', name)
     image = pygame.image.load(fullname)
     return image
 
