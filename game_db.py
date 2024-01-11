@@ -1,5 +1,5 @@
 import sqlite3
-from DatabaseErrors import *
+from db_errors import *
 
 
 class Database:

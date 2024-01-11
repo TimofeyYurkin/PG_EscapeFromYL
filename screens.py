@@ -1,7 +1,7 @@
 import pygame
 
-from RoutineFunctions import load_image, terminate
-from GameDatabase import Database
+from routine import load_image, terminate
+from game_db import Database
 
 
 class StartScreens:
@@ -40,7 +40,7 @@ class StartScreens:
                 y_pos += line_rect.height + 50
                 self.btns.append((line_rect.x, line_rect.y, line_rect.x + line_rect.width, line_rect.y + line_rect.height))
             elif line == 1:
-                y_pos += line_rect.height + 200
+                y_pos += line_rect.height + 150
             else:
                 y_pos += line_rect.height + 5
             self.screen.blit(line_render, line_rect)
@@ -196,7 +196,7 @@ class StartScreens:
             pygame.time.Clock().tick(60)
 
     def set_background(self):
-        background = pygame.transform.scale(load_image('StartScreenBG.jpg', 'BGs'), self.SIZE)
+        background = pygame.transform.scale(load_image('StartScreenBG.jpg', 'bgs'), self.SIZE)
         alpha_surface = pygame.Surface(self.SIZE)
         alpha_surface.fill((0, 0, 0))
         alpha_surface.set_alpha(150)
