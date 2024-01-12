@@ -5,7 +5,7 @@ from routine import *
 pygame.init()
 pygame.display.set_caption('Побег из Яндекс.Лицея')
 
-SIZE = W, H = (1000, 700)
+SIZE = W, H = (1050, 700)
 screen = pygame.display.set_mode(SIZE)
 running = True
 

@@ -1,5 +1,6 @@
 import os
 import sys
+import random
 import pygame
 
 
@@ -25,15 +26,31 @@ class Wall(pygame.sprite.Sprite):
         self.rect = self.image.get_rect().move(50 * pos_x, 50 * pos_y)
 
 
+class Chair(pygame.sprite.Sprite):
+    def __init__(self, pos_x, pos_y):
+        super().__init__(all_sprites, tiles_group, obstacles_group)
+        self.image = load_image('chair.png', 'textures')
+        self.rect = self.image.get_rect().move(50 * pos_x + 20, 50 * pos_y + 20)
+
+
+class Table(pygame.sprite.Sprite):
+    def __init__(self, pos_x, pos_y):
+        super().__init__(all_sprites, tiles_group, obstacles_group)
+        self.image = load_image('table.png', 'textures')
+        self.rect = self.image.get_rect().move(50 * pos_x, 50 * pos_y)
+        self.mask = pygame.mask.from_surface(self.image)
+
+
 class Player(pygame.sprite.Sprite):
     def __init__(self, pos_x, pos_y):
         super().__init__(all_sprites, player_group)
-        self.frames= []
+        self.frames = []
         self.row, self.column = 0, 0
 
         self.cut_sheet(load_image('player_sprites.png', 'textures'), 4, 4)
         self.image = self.frames[0]
         self.rect = self.image.get_rect().move(50 * pos_x, 50 * pos_y)
+        self.mask = pygame.mask.from_surface(self.image)
 
     def cut_sheet(self, sheet, columns, rows):
         self.rect = pygame.Rect(0, 0, sheet.get_width() // columns, sheet.get_height() // rows)
@@ -61,7 +78,7 @@ class Player(pygame.sprite.Sprite):
             else:
                 self.column = 0
             self.image = self.frames[self.row * 4 + self.column]
-        if pygame.sprite.spritecollide(self, obstacles_group, False):
+        if pygame.sprite.spritecollideany(self, obstacles_group, pygame.sprite.collide_mask):
             x, y = 0, 0
             if args[0] == pygame.K_s:
                 y = -1
@@ -71,8 +88,29 @@ class Player(pygame.sprite.Sprite):
                 x = -1
             if args[0] == pygame.K_w:
                 y = 1
-            while pygame.sprite.spritecollide(self, obstacles_group, False):
+            while pygame.sprite.spritecollideany(self, obstacles_group, pygame.sprite.collide_mask):
                 self.rect = self.rect.move(x, y)
+
+
+class Ghost(pygame.sprite.Sprite):
+    def __init__(self, pos_x, pos_y):
+        super().__init__(all_sprites, enemies_group)
+        self.frames = []
+        self.row, self.column = 0, 0
+
+        self.cut_sheet(load_image('player_sprites.png', 'textures'), 4, 4)
+        self.image = self.frames[0]
+        self.rect = self.image.get_rect().move(50 * pos_x, 50 * pos_y)
+
+    def cut_sheet(self, sheet, columns, rows):
+        self.rect = pygame.Rect(0, 0, sheet.get_width() // columns, sheet.get_height() // rows)
+        for j in range(rows):
+            for i in range(columns):
+                frame_location = (self.rect.w * i, self.rect.h * j)
+                self.frames.append(sheet.subsurface(pygame.Rect(frame_location, self.rect.size)))
+
+    def update(self):
+        pass
 
 
 def load_image(name, directory):
@@ -95,6 +133,12 @@ def generate_level(level):
                 Floor(x, y)
             elif level[y][x] == '#':
                 Wall(x, y)
+            elif level[y][x] == 'h':
+                Floor(x, y)
+                Chair(x, y)
+            elif level[y][x] == 'H':
+                Floor(x, y)
+                Table(x, y)
             elif level[y][x] == '@':
                 Floor(x, y)
                 px, py = x, y
