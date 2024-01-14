@@ -97,6 +97,7 @@ class StartScreens:
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE:
                         self.main_start()
+                        return
             pygame.display.flip()
             pygame.time.Clock().tick(60)
 
@@ -117,12 +118,14 @@ class StartScreens:
                     if event.key == pygame.K_ESCAPE:
                         self.player = ''
                         self.main_start()
+                        return
                     if event.key == pygame.K_BACKSPACE:
                         self.player = self.player[:-1]
                     if event.key == 13:
                         answer = self.db.registration_player(self.player)
                         if answer[-1] == '!':
                             self.main_start()
+                            return
                         else:
                             self.player = ''
                             screen_text[2] = answer
@@ -164,12 +167,14 @@ class StartScreens:
                     if event.key == pygame.K_ESCAPE:
                         self.player = ''
                         self.main_start()
+                        return
                     if event.key == pygame.K_BACKSPACE:
                         self.player = self.player[:-1]
                     if event.key == 13:
                         answer = self.db.login_player(self.player)
                         if answer[-1] == '!':
                             self.main_start()
+                            return
                         else:
                             self.player = ''
                             screen_text[2] = answer
