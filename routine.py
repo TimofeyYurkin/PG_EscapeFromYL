@@ -19,7 +19,6 @@ def cut_sheet(sheet, columns, rows):
     return rect, frames
 
 
-
 def load_level(filename):
     with open(f'data/levels/{filename}', 'r') as map_file:
         level_map = [line.strip() for line in map_file]

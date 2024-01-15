@@ -1,6 +1,7 @@
 from screens import StartScreens
 from objects_load import *
 
+# Инициализация Pygame
 pygame.init()
 pygame.display.set_caption('Побег из Яндекс.Лицея')
 
@@ -8,20 +9,29 @@ SIZE = W, H = (1050, 700)
 screen = pygame.display.set_mode(SIZE)
 running = True
 
+start_screen = StartScreens(SIZE, screen)
+start_screen.main_start()
+
+# Пользовательские ивенты для обработки анимаций, событий и т.д.
 MOVE_EVENT = pygame.USEREVENT + 1
 pygame.time.set_timer(MOVE_EVENT, 100)
 
 UPDATE_DECORATION = pygame.USEREVENT + 2
 pygame.time.set_timer(UPDATE_DECORATION, 250)
 
-start_screen = StartScreens(SIZE, screen)
-start_screen.main_start()
+ACTIVATE_SPIKES = pygame.USEREVENT + 3
+pygame.time.set_timer(ACTIVATE_SPIKES, 400)
 
-player = generate_level(load_level('first.txt'))
+PLAYER_INVULNERABILITY = pygame.USEREVENT + 4
+pygame.time.set_timer(PLAYER_INVULNERABILITY, 0)
+
+# Первый уровень (На данный момент тестовый)
+player, lives = generate_level(load_level('first.txt'))
 
 while running:
     pygame.time.Clock().tick(60)
     screen.fill(pygame.Color('#442869'))
+    result = None
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
@@ -37,7 +47,23 @@ while running:
                 player.update(pygame.K_a)
         if event.type == UPDATE_DECORATION:
             decoration_group.update()
+        if event.type == ACTIVATE_SPIKES:
+            spikes_group.update()
+        if event.type == PLAYER_INVULNERABILITY:
+            pygame.time.set_timer(PLAYER_INVULNERABILITY, 0)
+            player.invulnerability = False
+    result = player.update()
+    for result_type in result.keys():
+        if result[result_type][0] and result_type == 'spikes' and not player.invulnerability:
+            lives.lose_life()
+            player.invulnerability = True
+            pygame.time.set_timer(PLAYER_INVULNERABILITY, 1500)
+        elif result_type == 'dang_floor' and result[result_type][0] and result[result_type][1] == 'trap_floorf.jpg':
+            lives.lose_life()
+            player.invulnerability = True
+            pygame.time.set_timer(PLAYER_INVULNERABILITY, 2000)
     all_sprites.draw(screen)
     pygame.display.flip()
+
 
 terminate()

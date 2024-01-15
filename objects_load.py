@@ -1,19 +1,25 @@
 import random
 from routine import *
 
-
+# Основные группы
 all_sprites = pygame.sprite.Group()
-
 tiles_group = pygame.sprite.Group()
 obstacles_group = pygame.sprite.Group()
-decoration_group = pygame.sprite.Group()
 
+# Группы игрока
 player_group = pygame.sprite.Group()
+stats_group = pygame.sprite.Group()
 
-catches_group = pygame.sprite.Group()
+# Группы опасностей для игрока
+traps_group = pygame.sprite.Group()
+spikes_group = pygame.sprite.Group()
 enemies_group = pygame.sprite.Group()
 
+# Дополнительные группы
+decoration_group = pygame.sprite.Group()
 
+
+# Классы основных объектов
 class Floor(pygame.sprite.Sprite):
     def __init__(self, pos_x, pos_y, index):
         super().__init__(all_sprites, tiles_group)
@@ -42,6 +48,7 @@ class Obstacle(pygame.sprite.Sprite):
         self.mask = pygame.mask.from_surface(self.image)
 
 
+# Классы игрока
 class Player(pygame.sprite.Sprite):
     def __init__(self, pos_x, pos_y):
         super().__init__(all_sprites, player_group)
@@ -52,7 +59,13 @@ class Player(pygame.sprite.Sprite):
         self.rect = self.image.get_rect().move(50 * pos_x, 50 * pos_y)
         self.mask = pygame.mask.from_surface(self.image)
 
+        self.invulnerability = False
+
     def update(self, *args, **kwargs):
+        result = {
+            'spikes': [False,],
+            'dang_floor': [False,]
+        }
         if args:
             if args[0] == pygame.K_s:
                 self.rect = self.rect.move(0, 15)
@@ -83,13 +96,67 @@ class Player(pygame.sprite.Sprite):
                 y = 1
             while pygame.sprite.spritecollideany(self, obstacles_group, pygame.sprite.collide_mask):
                 self.rect = self.rect.move(x, y)
+        if not self.invulnerability:
+            for sprite in traps_group:
+                if self.rect.colliderect(sprite.rect) and isinstance(sprite, Spikes) and sprite.column > 5:
+                    result['spikes'] = [True,]
+                elif self.rect.colliderect(sprite.rect) and isinstance(sprite, DangerousFloor):
+                    result['dang_floor'] = [True, sprite.true_type]
+                    sprite.update()
+        return result
+
+
+class Life(pygame.sprite.Sprite):
+    def __init__(self):
+        super().__init__(all_sprites, stats_group)
+        self.lives_left = 3
+        self.rect, self.frames = cut_sheet(load_image('life_sprites.png', 'textures/stats'), 4, 1)
+
+        self.frames = self.frames[::-1]
+        self.image = self.frames[3]
+        self.rect = self.image.get_rect().move(10, 10)
+
+    def lose_life(self):
+        self.lives_left -= 1
+        if self.lives_left > -1:
+            self.image = self.frames[self.lives_left]
+
+
+# Классы опасных объектов для игрока
+class Spikes(pygame.sprite.Sprite):
+    def __init__(self, pos_x, pos_y):
+        super().__init__(all_sprites, tiles_group, traps_group, spikes_group)
+        self.column = 0
+        self.rect, self.frames = cut_sheet(load_image('spikes_sprites.png', 'textures/traps'), 10, 1)
+
+        self.image = self.frames[0]
+        self.rect = self.image.get_rect().move(50 * pos_x, 50 * pos_y)
+
+    def update(self):
+        if self.column < 9:
+            self.column += 1
+        else:
+            self.column = 0
+        self.image = self.frames[self.column]
+
+
+class DangerousFloor(pygame.sprite.Sprite):
+    def __init__(self, pos_x, pos_y):
+        super().__init__(all_sprites, tiles_group, traps_group)
+        self.true_type = random.choice(('trap_floorf.jpg', 'trap_floort.jpg'))
+
+        self.image = load_image('trap_floorn.jpg', 'textures/traps')
+        self.rect = self.image.get_rect().move(pos_x * 50, pos_y * 50)
+
+    def update(self):
+        self.image = load_image(self.true_type, 'textures/traps')
 
 
 class Ghost(pygame.sprite.Sprite):
     def __init__(self, pos_x, pos_y):
         super().__init__(all_sprites, enemies_group)
         self.row, self.column = 0, 0
-        self.rect, self.frames = cut_sheet(load_image('player_sprites.png', 'textures'), 9, 4)
+        self.rect, self.frames = cut_sheet(load_image('enemy_sprites.png', 'textures'), 9, 4)
 
         self.image = self.frames[0]
         self.rect = self.image.get_rect().move(50 * pos_x, 50 * pos_y)
@@ -98,12 +165,12 @@ class Ghost(pygame.sprite.Sprite):
         pass
 
 
+# Классы декоративных объектов
 class Decoration(pygame.sprite.Sprite):
     def __init__(self, pos_x, pos_y, filename):
         super().__init__(all_sprites, decoration_group)
         self.image = load_image(filename, 'textures/decorations')
         self.rect = self.image.get_rect().move(50 * pos_x, 50 * pos_y)
-
 
 
 class Torch(pygame.sprite.Sprite):
@@ -123,6 +190,7 @@ class Torch(pygame.sprite.Sprite):
         self.image = self.frames[self.column]
 
 
+# Функция для загрузки уровня из .txt файла
 def generate_level(level):
     px, py = None, None
     wall_types = ('#', '%', '_', '<', '>', '[', ']', '{', '}')
@@ -174,5 +242,10 @@ def generate_level(level):
             elif level[y][x] == '@':
                 Floor(x, y, random.randint(0, 3))
                 px, py = x, y
+            elif level[y][x] == 'x':
+                Spikes(x, y)
+            elif level[y][x] == 'o':
+                DangerousFloor(x, y)
+    lives = Life()
     new_player = Player(px, py)
-    return new_player
+    return new_player, lives
