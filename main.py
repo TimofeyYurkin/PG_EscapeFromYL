@@ -25,12 +25,15 @@ pygame.time.set_timer(ACTIVATE_SPIKES, 400)
 PLAYER_INVULNERABILITY = pygame.USEREVENT + 4
 pygame.time.set_timer(PLAYER_INVULNERABILITY, 0)
 
+TIMER_CHANGE = pygame.USEREVENT + 5
+pygame.time.set_timer(TIMER_CHANGE, 1000)
+
 # Первый уровень (На данный момент тестовый)
-player, lives = generate_level(load_level('first.txt'))
+player, lives, coins, time = generate_level(load_level('first.txt'))
 
 while running:
-    pygame.time.Clock().tick(60)
     screen.fill(pygame.Color('#442869'))
+    pygame.time.Clock().tick(60)
     result = None
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -45,6 +48,9 @@ while running:
                 player.update(pygame.K_s)
             elif keys[pygame.K_a]:
                 player.update(pygame.K_a)
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_f and player.keys > 0:
+                pass
         if event.type == UPDATE_DECORATION:
             decoration_group.update()
         if event.type == ACTIVATE_SPIKES:
@@ -52,17 +58,32 @@ while running:
         if event.type == PLAYER_INVULNERABILITY:
             pygame.time.set_timer(PLAYER_INVULNERABILITY, 0)
             player.invulnerability = False
+        if event.type == TIMER_CHANGE:
+            time.update()
     result = player.update()
     for result_type in result.keys():
         if result[result_type][0] and result_type == 'spikes' and not player.invulnerability:
             lives.lose_life()
             player.invulnerability = True
             pygame.time.set_timer(PLAYER_INVULNERABILITY, 1500)
-        elif result_type == 'dang_floor' and result[result_type][0] and result[result_type][1] == 'trap_floorf.jpg':
-            lives.lose_life()
+        elif result_type == 'dang_floor' and result[result_type][0]:
+            if not result[result_type][1].checked and result[result_type][1].true_type == 'trap_floorf.png':
+                lives.lose_life()
+                result[result_type][1].checked = True
+            elif not result[result_type][1].checked and result[result_type][1].true_type == 'trap_floort.png':
+                coins.update()
+                result[result_type][1].checked = True
             player.invulnerability = True
-            pygame.time.set_timer(PLAYER_INVULNERABILITY, 2000)
+            pygame.time.set_timer(PLAYER_INVULNERABILITY, 1500)
+        elif result_type == 'coin' and result[result_type][0]:
+            coins.update()
+            result[result_type][1].kill()
+        elif result_type == 'key' and result[result_type][0]:
+            result[result_type][1].kill()
+            player.keys += 1
     all_sprites.draw(screen)
+    coins.show_stat(screen)
+    time.show_time(screen)
     pygame.display.flip()
 
 
