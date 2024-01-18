@@ -28,9 +28,11 @@ pygame.time.set_timer(PLAYER_INVULNERABILITY, 0)
 TIMER_CHANGE = pygame.USEREVENT + 5
 pygame.time.set_timer(TIMER_CHANGE, 1000)
 
+DOOR_UNLOCK = pygame.USEREVENT + 6
+pygame.time.set_timer(DOOR_UNLOCK, 0)
+
 # Первый уровень (На данный момент тестовый)
 player, lives, coins, time = generate_level(load_level('first.txt'))
-
 while running:
     screen.fill(pygame.Color('#442869'))
     pygame.time.Clock().tick(60)
@@ -48,9 +50,16 @@ while running:
                 player.update(pygame.K_s)
             elif keys[pygame.K_a]:
                 player.update(pygame.K_a)
+            enemies_group.update()
         if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_f and player.keys > 0:
-                pass
+            if event.key == pygame.K_f:
+                if player.keys > 0 and pygame.sprite.spritecollideany(player, doors_group):
+                    player.keys -= 1
+                    for door in doors_group:
+                        if pygame.sprite.collide_rect(player, door):
+                            unlock_door = door
+                            break
+                    pygame.time.set_timer(DOOR_UNLOCK, 150)
         if event.type == UPDATE_DECORATION:
             decoration_group.update()
         if event.type == ACTIVATE_SPIKES:
@@ -60,6 +69,12 @@ while running:
             player.invulnerability = False
         if event.type == TIMER_CHANGE:
             time.update()
+        if event.type == DOOR_UNLOCK:
+            if unlock_door.column < 13:
+                unlock_door.update()
+            else:
+                unlock_door.kill()
+                pygame.time.set_timer(DOOR_UNLOCK, 0)
     result = player.update()
     for result_type in result.keys():
         if result[result_type][0] and result_type == 'spikes' and not player.invulnerability:
@@ -75,6 +90,10 @@ while running:
                 result[result_type][1].checked = True
             player.invulnerability = True
             pygame.time.set_timer(PLAYER_INVULNERABILITY, 1500)
+        elif result_type == 'enemy' and result[result_type][0]:
+            lives.lose_life()
+            player.invulnerability = True
+            pygame.time.set_timer(PLAYER_INVULNERABILITY, 1500)
         elif result_type == 'coin' and result[result_type][0]:
             coins.update()
             result[result_type][1].kill()
@@ -84,6 +103,7 @@ while running:
     all_sprites.draw(screen)
     coins.show_stat(screen)
     time.show_time(screen)
+    enemies_group.draw(screen)
     pygame.display.flip()
 
 

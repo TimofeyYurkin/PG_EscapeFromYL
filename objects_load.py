@@ -1,7 +1,5 @@
 import random
-
 import pygame.sprite
-
 from routine import *
 
 # Основные группы
@@ -32,7 +30,6 @@ class Floor(pygame.sprite.Sprite):
     def __init__(self, pos_x, pos_y, index):
         super().__init__(all_sprites, tiles_group)
         floor = ('floor_type1.png', 'floor_type2.png', 'floor_type3.png', 'floor_type4.png', 'floor_type5.png')
-
         self.image = load_image(floor[index], 'textures/tiles/floor')
         self.rect = self.image.get_rect().move(50 * pos_x, 50 * pos_y)
 
@@ -42,7 +39,6 @@ class Wall(pygame.sprite.Sprite):
         super().__init__(all_sprites, tiles_group, obstacles_group)
         walls = ('wall_type1.png', 'wall_type2.png', 'wall_type3.png', 'wall_top.png', 'wall_topl.png', 'wall_topr.png',
                  'wall_l.png', 'wall_r.png', 'wall_btml.png', 'wall_btmr.png')
-
         self.image = load_image(walls[index], 'textures/tiles/walls')
         self.rect = self.image.get_rect().move(50 * pos_x, 50 * pos_y)
         self.mask = pygame.mask.from_surface(self.image)
@@ -61,10 +57,11 @@ class Player(pygame.sprite.Sprite):
     def __init__(self, pos_x, pos_y):
         super().__init__(all_sprites, player_group)
         self.row, self.column = 0, 0
-        self.rect, self.frames = cut_sheet(load_image('player_sprites.png', 'textures'), 4, 4)
+        self.rect, self.frames = cut_sheet(load_image('player_sprites.png', 'textures'), 10, 4)
 
         self.image = self.frames[0]
         self.rect = self.image.get_rect().move(50 * pos_x, 50 * pos_y)
+        self.rect.height += 17
         self.mask = pygame.mask.from_surface(self.image)
 
         self.invulnerability = False
@@ -75,49 +72,50 @@ class Player(pygame.sprite.Sprite):
             'spikes': [False,],
             'dang_floor': [False,],
             'coin': [False,],
-            'key': [False,]
+            'key': [False,],
+            'enemy': [False,]
         }
+        move_back = (0, 0)
         if args:
             if args[0] == pygame.K_s:
-                self.rect = self.rect.move(0, 15)
+                self.rect = self.rect.move(0, 10)
                 self.row = 0
-            if args[0] == pygame.K_a:
-                self.rect = self.rect.move(-15, 0)
+                move_back = (0, -10)
+            elif args[0] == pygame.K_a:
+                self.rect = self.rect.move(-10, 0)
                 self.row = 1
-            if args[0] == pygame.K_d:
-                self.rect = self.rect.move(15, 0)
+                move_back = (10, 0)
+            elif args[0] == pygame.K_w:
+                self.rect = self.rect.move(0, -10)
                 self.row = 2
-            if args[0] == pygame.K_w:
-                self.rect = self.rect.move(0, -15)
+                move_back = (0, 10)
+            elif args[0] == pygame.K_d:
+                self.rect = self.rect.move(10, 0)
                 self.row = 3
-            if self.column < 3:
+                move_back = (-10, 0)
+            if self.column < 9:
                 self.column += 1
             else:
                 self.column = 0
-            self.image = self.frames[self.row * 4 + self.column]
-        if pygame.sprite.spritecollideany(self, obstacles_group, pygame.sprite.collide_mask):
-            x, y = 0, 0
-            if args[0] == pygame.K_s:
-                y = -1
-            if args[0] == pygame.K_a:
-                x = 1
-            if args[0] == pygame.K_d:
-                x = -1
-            if args[0] == pygame.K_w:
-                y = 1
-            while pygame.sprite.spritecollideany(self, obstacles_group, pygame.sprite.collide_mask):
-                self.rect = self.rect.move(x, y)
+            self.image = self.frames[self.row * 10 + self.column]
+        for obstacle in obstacles_group:
+            if pygame.sprite.collide_mask(self, obstacle):
+                self.rect.x += move_back[0]
+                self.rect.y += move_back[1]
         if not self.invulnerability:
             for sprite in traps_group:
                 if (pygame.sprite.collide_mask(self, sprite) and sprite.rect.y <= self.rect.y +
-                        self.rect.height - 17 <= sprite.rect.y + sprite.rect.width and isinstance(sprite, Spikes)
+                        self.rect.height <= sprite.rect.y + sprite.rect.height and isinstance(sprite, Spikes)
                         and sprite.column > 5):
                     result['spikes'] = [True,]
                 elif (pygame.sprite.collide_mask(self, sprite) and sprite.rect.y <= self.rect.y +
-                      self.rect.height - 17 <= sprite.rect.y + sprite.rect.width and isinstance(sprite, DangerousFloor)
+                      self.rect.height <= sprite.rect.y + sprite.rect.height and isinstance(sprite, DangerousFloor)
                       and not sprite.checked):
                     result['dang_floor'] = [True, sprite]
                     sprite.update()
+            for enemy in enemies_group:
+                if pygame.sprite.collide_mask(self, enemy):
+                    result['enemy'] = [True,]
         for coin in coins_group:
             if pygame.sprite.collide_mask(self, coin):
                 result['coin'] = [True, coin]
@@ -211,15 +209,12 @@ class Door(pygame.sprite.Sprite):
         super().__init__(all_sprites, obstacles_group, doors_group)
         self.column = 0
         self.rect, self.frames = cut_sheet(load_image('door_sprites.png', 'textures/furniture'), 14, 1)
-
         self.image = self.frames[0]
         self.rect = self.image.get_rect().move(pos_x * 50, pos_y * 50 - 10)
-        self.mask = pygame.mask.from_surface(self.image)
 
     def update(self):
         self.column += 1
         self.image = self.frames[self.column]
-
 
 
 # Классы опасных объектов для игрока
@@ -228,7 +223,6 @@ class Spikes(pygame.sprite.Sprite):
         super().__init__(all_sprites, tiles_group, traps_group, spikes_group)
         self.column = 0
         self.rect, self.frames = cut_sheet(load_image('spikes_sprites.png', 'textures/traps'), 10, 1)
-
         self.image = self.frames[0]
         self.rect = self.image.get_rect().move(50 * pos_x, 50 * pos_y)
 
@@ -244,7 +238,6 @@ class DangerousFloor(pygame.sprite.Sprite):
     def __init__(self, pos_x, pos_y):
         super().__init__(all_sprites, tiles_group, traps_group)
         self.true_type = random.choice(('trap_floorf.png', 'trap_floort.png'))
-
         self.image = load_image('trap_floorn.png', 'textures/traps')
         self.rect = self.image.get_rect().move(pos_x * 50, pos_y * 50)
         self.checked = False
@@ -254,16 +247,46 @@ class DangerousFloor(pygame.sprite.Sprite):
 
 
 class Ghost(pygame.sprite.Sprite):
-    def __init__(self, pos_x, pos_y):
+    def __init__(self, pos_x, pos_y, axis):
         super().__init__(all_sprites, enemies_group)
-        self.row, self.column = 0, 0
+        self.speed = 5
+        self.axis = axis
+        self.reset = False
+        if self.axis == 'x':
+            self.row, self.column = 2, 0
+        else:
+            self.row, self.column = 0, 0
         self.rect, self.frames = cut_sheet(load_image('enemy_sprites.png', 'textures'), 9, 4)
-
         self.image = self.frames[0]
         self.rect = self.image.get_rect().move(50 * pos_x, 50 * pos_y)
 
     def update(self):
-        pass
+        if self.axis == 'y':
+            self.rect = self.rect.move(0, self.speed)
+            if pygame.sprite.spritecollideany(self, obstacles_group):
+                self.reset = True
+                self.speed = -self.speed
+                self.rect = self.rect.move(0, self.speed)
+                if self.row == 0:
+                    self.row = 3
+                else:
+                    self.row = 0
+        else:
+            self.rect = self.rect.move(self.speed, 0)
+            if pygame.sprite.spritecollideany(self, obstacles_group):
+                self.reset = True
+                self.speed = -self.speed
+                self.rect = self.rect.move(self.speed, 0)
+                if self.row == 1:
+                    self.row = 2
+                else:
+                    self.row = 1
+        if self.column < 8 and not self.reset:
+            self.column += 1
+        else:
+            self.column = 0
+            self.reset = False
+        self.image = self.frames[self.row * 9 + self.column]
 
 
 # Классы декоративных объектов
@@ -279,7 +302,6 @@ class Torch(pygame.sprite.Sprite):
         super().__init__(all_sprites, decoration_group)
         self.column = 0
         self.rect, self.frames = cut_sheet(load_image('torch_sprites.png', 'textures/furniture'), 6, 1)
-
         self.image = self.frames[0]
         self.rect = self.image.get_rect().move(50 * pos_x + 10, 50 * pos_y + 10)
 
@@ -307,8 +329,10 @@ def generate_level(level):
         for x in range(len(level[y])):
             if level[y][x] == '.' and level[y][x - 1] != 'H':
                 Floor(x, y, random.randint(0, 3))
-                if random.randint(1, 30) == random.randint(1, 30):
+                if random.randint(1, 40) == random.randint(1, 40):
                     Coin(x, y)
+            elif level[y][x] == ',':
+                Floor(x, y, 4)
             elif level[y][x] in wall_types:
                 if (x, y) not in corners:
                     if level[y][x] in ('_', '<', '>') and y == 0:
@@ -362,9 +386,14 @@ def generate_level(level):
             elif level[y][x] == 'k':
                 Floor(x, y, random.randint(0, 3))
                 Key(x, y)
+            elif level[y][x] == 'c':
+                Floor(x, y, random.randint(0, 3))
+                Coin(x, y)
+            elif level[y][x] == 'e':
+                Floor(x, y, random.randint(0, 3))
+                Ghost(x, y, 'x')
+            elif level[y][x] == 'E':
+                Floor(x, y, random.randint(0, 3))
+                Ghost(x, y, 'y')
     Box()
-    lives = Life()
-    time = Time()
-    coins = StatsCoin()
-    new_player = Player(px, py)
-    return new_player, lives, coins, time
+    return Player(px, py), Life(), StatsCoin(), Time()
