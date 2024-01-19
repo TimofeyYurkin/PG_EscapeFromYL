@@ -128,7 +128,7 @@ class Player(pygame.sprite.Sprite):
 
 class Life(pygame.sprite.Sprite):
     def __init__(self):
-        super().__init__(all_sprites, stats_group)
+        super().__init__(stats_group)
         self.lives_left = 3
         self.rect, self.frames = cut_sheet(load_image('life_sprites.png', 'textures/stats'), 4, 1)
 
@@ -144,7 +144,7 @@ class Life(pygame.sprite.Sprite):
 
 class StatsCoin(pygame.sprite.Sprite):
     def __init__(self):
-        super().__init__(all_sprites, stats_group, coins_group)
+        super().__init__(stats_group, coins_group)
         self.image = load_image('coin.png', 'textures/stats')
         self.rect = self.image.get_rect().move(72, 20)
 
@@ -163,7 +163,7 @@ class StatsCoin(pygame.sprite.Sprite):
 
 class Time(pygame.sprite.Sprite):
     def __init__(self):
-        super().__init__(all_sprites, stats_group)
+        super().__init__(stats_group)
         self.image = load_image('time.png', 'textures/stats')
         self.rect = self.image.get_rect().move(25, 58)
 

@@ -62,11 +62,11 @@ def show_level():
                         for door in doors_group:
                             if pygame.sprite.collide_rect(player, door):
                                 unlock_door = door
+                                pygame.time.set_timer(DOOR_UNLOCK, 150)
+                                level_music.door_open()
                                 break
                     if pygame.sprite.spritecollideany(player, exits_group):
                         return
-                    pygame.time.set_timer(DOOR_UNLOCK, 150)
-                    level_music.door_open()
             if event.type == UPDATE_DECORATION:
                 decoration_group.update()
             if event.type == ACTIVATE_SPIKES:
@@ -113,13 +113,24 @@ def show_level():
                 player.keys += 1
                 level_music.get_key()
         all_sprites.draw(screen)
+        stats_group.draw(screen)
         coins.show_stat(screen)
         time.show_time(screen)
         enemies_group.draw(screen)
         pygame.display.flip()
 
 
+def clear_sprites(every=None, stats=None):
+    if every is not None:
+        for sprite in every:
+            sprite.kill()
+    if stats is not None:
+        for sprite in stats:
+            sprite.kill()
+
+
 while running:
+    clear_sprites(all_sprites, stats_group)
     start_screen.main_start()
     player, lives, coins, time = generate_level(load_level(random.choice(('first_type1.txt', 'first_type2.txt'))), 1)
     pygame.mixer.music.load('data/sounds/normal_bg_music.mp3')
