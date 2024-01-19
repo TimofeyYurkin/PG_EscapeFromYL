@@ -7,6 +7,9 @@ pygame.init()
 pygame.mixer.pre_init(44100, -16, 1, 512)
 pygame.display.set_caption('Побег из Яндекс.Лицея')
 
+pygame.mixer.music.load('data/sounds/normal_bg_music.mp3')
+pygame.mixer.music.set_volume(0.1)
+
 SIZE = W, H = (1050, 700)
 screen = pygame.display.set_mode(SIZE)
 start_screen = StartScreens(SIZE, screen)
@@ -120,27 +123,24 @@ def show_level():
         pygame.display.flip()
 
 
-def clear_sprites(every=None, stats=None):
-    if every is not None:
-        for sprite in every:
-            sprite.kill()
-    if stats is not None:
-        for sprite in stats:
-            sprite.kill()
+def ready_for_level():
+    pygame.mixer.music.play(-1)
+    lives.lives_left = 3
+    lives.image = lives.frames[3]
 
 
 while running:
     clear_sprites(all_sprites, stats_group)
     start_screen.main_start()
+
     player, lives, coins, time = generate_level(load_level(random.choice(('first_type1.txt', 'first_type2.txt'))), 1)
-    pygame.mixer.music.load('data/sounds/normal_bg_music.mp3')
-    pygame.mixer.music.play(-1)
-    pygame.mixer.music.set_volume(0.1)
+    ready_for_level()
     show_level()
+
     pygame.mixer.music.pause()
-
-    lives.lives_left = 3
-    lives.image = lives.frames[3]
-
+    clear_sprites(all_sprites)
+    player = generate_level(load_level('second_type1.txt'), 2)
+    ready_for_level()
+    show_level()
 
 terminate()

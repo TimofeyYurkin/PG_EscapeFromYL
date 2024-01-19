@@ -25,6 +25,15 @@ def load_level(filename):
     return level_map
 
 
+def clear_sprites(every=None, stats=None):
+    if every is not None:
+        for sprite in every:
+            sprite.kill()
+    if stats is not None:
+        for sprite in stats:
+            sprite.kill()
+
+
 def terminate():
     pygame.quit()
     sys.exit()
