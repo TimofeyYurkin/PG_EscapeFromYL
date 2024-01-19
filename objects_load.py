@@ -11,6 +11,7 @@ obstacles_group = pygame.sprite.Group()
 coins_group = pygame.sprite.Group()
 keys_group = pygame.sprite.Group()
 doors_group = pygame.sprite.Group()
+exits_group = pygame.sprite.Group()
 
 # Группы игрока
 player_group = pygame.sprite.Group()
@@ -217,6 +218,14 @@ class Door(pygame.sprite.Sprite):
         self.image = self.frames[self.column]
 
 
+class Exit(pygame.sprite.Sprite):
+    def __init__(self, pos_x, pos_y):
+        super().__init__(all_sprites, obstacles_group, exits_group)
+        self.image = load_image('stair_nextlevel.png', 'textures/tiles/floor')
+        self.rect = self.image.get_rect().move(pos_x * 50, pos_y * 50)
+        self.mask = pygame.mask.from_surface(self.image)
+
+
 # Классы опасных объектов для игрока
 class Spikes(pygame.sprite.Sprite):
     def __init__(self, pos_x, pos_y):
@@ -237,7 +246,7 @@ class Spikes(pygame.sprite.Sprite):
 class DangerousFloor(pygame.sprite.Sprite):
     def __init__(self, pos_x, pos_y):
         super().__init__(all_sprites, tiles_group, traps_group)
-        self.true_type = random.choice(('trap_floorf.png', 'trap_floort.png'))
+        self.true_type = random.choice(('trap_floorf.png', 'trap_floort.png', 'trap_floort.png'))
         self.image = load_image('trap_floorn.png', 'textures/traps')
         self.rect = self.image.get_rect().move(pos_x * 50, pos_y * 50)
         self.checked = False
@@ -321,7 +330,7 @@ class Box(pygame.sprite.Sprite):
 
 
 # Функция для загрузки уровня из .txt файла
-def generate_level(level):
+def generate_level(level, number):
     px, py = None, None
     wall_types = ('#', '%', '_', '<', '>', '[', ']', '{', '}')
     corners = []
@@ -395,5 +404,9 @@ def generate_level(level):
             elif level[y][x] == 'E':
                 Floor(x, y, random.randint(0, 3))
                 Ghost(x, y, 'y')
+            elif level[y][x] == 'r':
+                Exit(x, y)
     Box()
-    return Player(px, py), Life(), StatsCoin(), Time()
+    if number == 1:
+        return Player(px, py), Life(), StatsCoin(), Time()
+    return Player(px, py)
