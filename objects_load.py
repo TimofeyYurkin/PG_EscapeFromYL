@@ -106,11 +106,11 @@ class Player(pygame.sprite.Sprite):
         if not self.invulnerability:
             for sprite in traps_group:
                 if (pygame.sprite.collide_mask(self, sprite) and sprite.rect.y <= self.rect.y +
-                        self.rect.height <= sprite.rect.y + sprite.rect.height and isinstance(sprite, Spikes)
+                        self.rect.height - 15 <= sprite.rect.y + sprite.rect.height and isinstance(sprite, Spikes)
                         and sprite.column > 5):
                     result['spikes'] = [True,]
                 elif (pygame.sprite.collide_mask(self, sprite) and sprite.rect.y <= self.rect.y +
-                      self.rect.height <= sprite.rect.y + sprite.rect.height and isinstance(sprite, DangerousFloor)
+                      self.rect.height - 15 <= sprite.rect.y + sprite.rect.height and isinstance(sprite, DangerousFloor)
                       and not sprite.checked):
                     result['dang_floor'] = [True, sprite]
                     sprite.update()
@@ -158,7 +158,8 @@ class StatsCoin(pygame.sprite.Sprite):
         screen.blit(stat_render, stat_rect)
 
     def update(self):
-        self.stat += 1
+        if self.stat < 99:
+            self.stat += 1
 
 
 class Time(pygame.sprite.Sprite):
@@ -169,23 +170,25 @@ class Time(pygame.sprite.Sprite):
 
         self.minutes = 0
         self.seconds = 0
+        self.time = '0:00'
         self.time_font = pygame.font.Font(None, 50)
 
     def show_time(self, screen):
         if self.seconds >= 10:
-            str_time = f'{self.minutes}:{self.seconds}'
+            self.time = f'{self.minutes}:{self.seconds}'
         else:
-            str_time = f'{self.minutes}:0{self.seconds}'
-        time_render = self.time_font.render(str_time, True, pygame.Color('White'))
+            self.time = f'{self.minutes}:0{self.seconds}'
+        time_render = self.time_font.render(self.time, True, pygame.Color('White'))
         stat_rect = time_render.get_rect()
         stat_rect.x, stat_rect.y = 72, 60
         screen.blit(time_render, stat_rect)
 
     def update(self):
-        self.seconds += 1
-        if self.seconds == 60:
-            self.seconds = 0
-            self.minutes += 1
+        if self.minutes != 59 or self.seconds != 59:
+            self.seconds += 1
+            if self.seconds == 60:
+                self.seconds = 0
+                self.minutes += 1
 
 
 # Предметы для взаимодействия с игроком
@@ -256,9 +259,9 @@ class DangerousFloor(pygame.sprite.Sprite):
 
 
 class Ghost(pygame.sprite.Sprite):
-    def __init__(self, pos_x, pos_y, axis):
+    def __init__(self, pos_x, pos_y, axis, plus_speed=0):
         super().__init__(all_sprites, enemies_group)
-        self.speed = 5
+        self.speed = 5 + plus_speed
         self.axis = axis
         self.reset = False
         if self.axis == 'x':
@@ -268,28 +271,34 @@ class Ghost(pygame.sprite.Sprite):
         self.rect, self.frames = cut_sheet(load_image('enemy_sprites.png', 'textures'), 9, 4)
         self.image = self.frames[0]
         self.rect = self.image.get_rect().move(50 * pos_x, 50 * pos_y)
+        self.mask = pygame.mask.from_surface(self.image)
+        self.rect.height -= 1
 
     def update(self):
         if self.axis == 'y':
             self.rect = self.rect.move(0, self.speed)
-            if pygame.sprite.spritecollideany(self, obstacles_group):
-                self.reset = True
-                self.speed = -self.speed
-                self.rect = self.rect.move(0, self.speed)
-                if self.row == 0:
-                    self.row = 3
-                else:
-                    self.row = 0
+            for obstacle in obstacles_group:
+                if pygame.sprite.collide_mask(self, obstacle):
+                    self.reset = True
+                    self.speed = -self.speed
+                    self.rect = self.rect.move(0, self.speed)
+                    if self.row == 0:
+                        self.row = 3
+                    else:
+                        self.row = 0
+                    break
         else:
             self.rect = self.rect.move(self.speed, 0)
-            if pygame.sprite.spritecollideany(self, obstacles_group):
-                self.reset = True
-                self.speed = -self.speed
-                self.rect = self.rect.move(self.speed, 0)
-                if self.row == 1:
-                    self.row = 2
-                else:
-                    self.row = 1
+            for obstacle in obstacles_group:
+                if pygame.sprite.collide_mask(self, obstacle):
+                    self.reset = True
+                    self.speed = -self.speed
+                    self.rect = self.rect.move(self.speed, 0)
+                    if self.row == 1:
+                        self.row = 2
+                    else:
+                        self.row = 1
+                    break
         if self.column < 8 and not self.reset:
             self.column += 1
         else:
@@ -348,7 +357,7 @@ def generate_level(level, number):
                         Floor(x, y, 4)
                     else:
                         Floor(x, y, random.randint(0, 3))
-                if level[y][x] == '%' and level[y][x - 2] == '%':
+                if level[y][x] == '%' and level[y][x - 2] == '%' and level[y][x - 1] == '#':
                     Torch(x - 1, y)
                 if level[y][x] == '#':
                     Wall(x, y, random.randint(0, 1))
@@ -406,6 +415,13 @@ def generate_level(level, number):
                 Ghost(x, y, 'y')
             elif level[y][x] == 'r':
                 Exit(x, y)
+            elif level[y][x] == 'b':
+                Floor(x, y, random.randint(0, 3))
+                Obstacle(x, y, 'barrel.png')
+            elif level[y][x] == 'F':
+                Floor(x, y, random.randint(0, 3))
+                Wall(x, y, random.randint(0, 1))
+                Decoration(x, y, random.choice(('flag_green.png', 'flag_red.png')))
     Box()
     if number == 1:
         return Player(px, py), Life(), StatsCoin(), Time()

@@ -55,4 +55,4 @@ class Database:
     def get_results(self, name):
         results = self.cur.execute('SELECT best_time, best_score FROM Players WHERE name = ?',
                                    (name,)).fetchone()
-        return f'{results[0]} - время; {results[1]} - баллы.'
+        return results

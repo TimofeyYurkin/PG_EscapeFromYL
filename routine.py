@@ -34,6 +34,25 @@ def clear_sprites(every=None, stats=None):
             sprite.kill()
 
 
+def pause_screen(screen, W, H):
+    alpha_surface = pygame.Surface((W, H))
+    alpha_surface.fill((0, 0, 0))
+    alpha_surface.set_alpha(150)
+
+    text_render = pygame.font.Font(None, 50).render('Чтобы вернуться на урок, повторно нажмите ESC.', 1, pygame.Color('White'))
+    text_rect = text_render.get_rect()
+    text_rect.center = (W // 2, H // 2)
+
+    title_render = pygame.font.Font(None, 70).render('ПЕРЕМЕНА', 1, pygame.Color('White'))
+    title_rect = text_render.get_rect()
+    title_rect.x = W // 2 - 120
+    title_rect.y = 100
+
+    screen.blit(alpha_surface, (0, 0))
+    screen.blit(title_render, title_rect)
+    screen.blit(text_render, text_rect)
+
+
 def terminate():
     pygame.quit()
     sys.exit()

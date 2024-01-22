@@ -28,8 +28,9 @@ class StartScreens:
             'Войти в аккаунт'
         ]
         if self.player:
+            results = self.db.get_results(self.player)
             screen_text[4] = f'Ваш ник: {self.player}'
-            screen_text[5] = f'Ваши лучшие результаты: {self.db.get_results(self.player)}'
+            screen_text[5] = f'Ваши лучшие результаты: {results[0]} - время; {results[1]} - баллы.'
 
         y_pos = 30
         for line in range(len(screen_text)):
@@ -38,7 +39,8 @@ class StartScreens:
             line_rect.x, line_rect.y = 50, y_pos
             if line > 1:
                 y_pos += line_rect.height + 50
-                self.btns.append((line_rect.x, line_rect.y, line_rect.x + line_rect.width, line_rect.y + line_rect.height))
+                self.btns.append((line_rect.x, line_rect.y, line_rect.x + line_rect.width, line_rect.y +
+                                  line_rect.height))
             elif line == 1:
                 y_pos += line_rect.height + 150
             else:
@@ -78,6 +80,7 @@ class StartScreens:
         )
         y_pos = 100
         for line in range(len(screen_text)):
+            pygame.time.Clock().tick(60)
             line_render = self.text_render(screen_text, line)
             if line < 2:
                 line_rect = line_render.get_rect(center=(self.SIZE[0] // 2, y_pos))
@@ -99,7 +102,6 @@ class StartScreens:
                         self.main_start()
                         return
             pygame.display.flip()
-            pygame.time.Clock().tick(60)
 
 
     def registration_start(self):
@@ -110,6 +112,7 @@ class StartScreens:
         ]
 
         while True:
+            pygame.time.Clock().tick(60)
             self.set_background()
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -147,9 +150,7 @@ class StartScreens:
             name_render = self.typical_font.render(self.player, 1, pygame.Color('white'))
             name_rect = name_render.get_rect(center=(self.SIZE[0] // 2, self.SIZE[1] // 2))
             self.screen.blit(name_render, name_rect)
-
             pygame.display.flip()
-            pygame.time.Clock().tick(60)
 
     def login_start(self):
         screen_text = [
@@ -159,6 +160,7 @@ class StartScreens:
         ]
 
         while True:
+            pygame.time.Clock().tick(60)
             self.set_background()
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -196,12 +198,10 @@ class StartScreens:
             name_render = self.typical_font.render(self.player, 1, pygame.Color('white'))
             name_rect = name_render.get_rect(center=(self.SIZE[0] // 2, self.SIZE[1] // 2))
             self.screen.blit(name_render, name_rect)
-
             pygame.display.flip()
-            pygame.time.Clock().tick(60)
 
     def set_background(self):
-        background = pygame.transform.scale(load_image('StartScreenBG.jpg', 'bgs'), self.SIZE)
+        background = pygame.transform.scale(load_image('start_background.jpg', 'bgs'), self.SIZE)
         alpha_surface = pygame.Surface(self.SIZE)
         alpha_surface.fill((0, 0, 0))
         alpha_surface.set_alpha(150)
@@ -216,3 +216,83 @@ class StartScreens:
         else:
             line_render = self.typical_font.render(screen_text[line], 1, pygame.Color('White'))
         return line_render
+
+
+class FinalScreen:
+    def __init__(self, screen, SIZE, player, score, time):
+        self.SIZE = SIZE
+        self.screen = screen
+        self.btns = []
+
+        self.player = player
+        self.score = score
+        self.time = time.split(':')
+
+        self.db = Database()
+
+    def final_start(self):
+        self.set_background()
+
+        title_render = pygame.font.Font(None, 50).render('ВЫ СВОДИТЕ КОНЦЫ С КОНЦАМИ', 1,
+                                                         pygame.Color('White'))
+        title_rect = title_render.get_rect(center=(self.SIZE[0] // 2, 100))
+        self.screen.blit(title_render, title_rect)
+
+        under_title_render = pygame.font.Font(None, 50).render('РАБОТНИКОМ ВКУСНО И ТОЧКА!', 1,
+                                                              pygame.Color('White'))
+        under_title_rect = title_render.get_rect(center=(self.SIZE[0] // 2 + 20, 180))
+        self.screen.blit(under_title_render, under_title_rect)
+
+        best_results = ''
+        if self.player != '':
+            best_results = self.db.get_results(self.player)
+        if best_results:
+            if int(self.time[0]) > int(best_results[0].split(':')[0]) or (int(self.time[1]) >
+                        int(best_results[0].split(':')[1] and int(self.time[1] == int(best_results[0].split(':')[0])))):
+                time_render = pygame.font.Font(None, 40).render(f'Вы улучшили показатель времени с {best_results[0]} до '
+                                                                   f'{":".join(self.time)}!', 1, pygame.Color('White'))
+                self.db.update_time(self.player, ':'.join(self.time))
+            else:
+                time_render = pygame.font.Font(None, 40).render(f'Ваш лучший результат выживаемости остался прежним: '
+                                                                f'{best_results[0]}', 1, pygame.Color('White'))
+
+            if int(self.score) > int(best_results[1]):
+                score_render = pygame.font.Font(None, 40).render(f'Вы улучшили показатель собранных рублей с '
+                                                                 f'{best_results[1]} до {self.score}!', 1, pygame.Color('White'))
+                self.db.update_score(self.player, self.score)
+            else:
+                score_render = pygame.font.Font(None, 40).render(f'Вы умрёте от голода. Ваш лучший результат '
+                                                                 f'остался прежним: {best_results[1]}.', 1, pygame.Color('White'))
+            time_rect = time_render.get_rect(center=(self.SIZE[0] // 2, self.SIZE[1] // 2 - 30))
+            self.screen.blit(time_render, time_rect)
+            score_rect = score_render.get_rect(center=(self.SIZE[0] // 2, self.SIZE[1] // 2 + 30))
+            self.screen.blit(score_render, score_rect)
+        else:
+            final_render = pygame.font.Font(None, 35).render('ВЫ нн. Партия яндекс-браузера изымает у вас '
+                                                             'кошка-баллы и пачку времени.', 1, pygame.Color('White'))
+            final_rect = final_render.get_rect(center=(self.SIZE[0] // 2, self.SIZE[1] // 2))
+            self.screen.blit(final_render, final_rect)
+        return_render = pygame.font.Font(None, 40).render('Вернуться в главное меню', 1, pygame.Color('White'))
+        return_rect = return_render.get_rect(center=(self.SIZE[0] // 2, self.SIZE[1] // 2 + 200))
+        self.btns.append((return_rect.x, return_rect.x + return_rect.width, return_rect.y, return_rect.y + return_rect.height))
+        self.screen.blit(return_render, return_rect)
+
+        while True:
+            pygame.time.Clock().tick(60)
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    terminate()
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    if (self.btns[0][0] <= event.pos[0] <= self.btns[0][1] and self.btns[0][2] <= event.pos[1] <=
+                            self.btns[0][3]):
+                        return
+            pygame.display.flip()
+
+
+    def set_background(self):
+        background = pygame.transform.scale(load_image('final_background.jpg', 'bgs'), self.SIZE)
+        alpha_surface = pygame.Surface(self.SIZE)
+        alpha_surface.fill((0, 0, 0))
+        alpha_surface.set_alpha(150)
+        self.screen.blit(background, (0, 0))
+        self.screen.blit(alpha_surface, (0, 0))
