@@ -244,25 +244,28 @@ class FinalScreen:
         self.screen.blit(under_title_render, under_title_rect)
 
         best_results = ''
+        normal_font = pygame.font.Font(None, 40)
         if self.player != '':
             best_results = self.db.get_results(self.player)
         if best_results:
-            if int(self.time[0]) > int(best_results[0].split(':')[0]) or (int(self.time[1]) >
-                        int(best_results[0].split(':')[1] and int(self.time[1] == int(best_results[0].split(':')[0])))):
-                time_render = pygame.font.Font(None, 40).render(f'Вы улучшили показатель времени с {best_results[0]} до '
-                                                                   f'{":".join(self.time)}!', 1, pygame.Color('White'))
+            check_time1 = (int(self.time[1]) > int(best_results[0].split(':')[1]) and
+                           int(self.time[0]) >= int(best_results[0].split(':')[0]))
+            check_time2 = int(self.time[0]) > int(best_results[0].split(':')[0])
+            if check_time1 or check_time2:
+                time_render = normal_font.render(f'Вы улучшили показатель времени с {best_results[0]} до '
+                                                 f'{":".join(self.time)}!', 1, pygame.Color('White'))
                 self.db.update_time(self.player, ':'.join(self.time))
             else:
-                time_render = pygame.font.Font(None, 40).render(f'Ваш лучший результат выживаемости остался прежним: '
-                                                                f'{best_results[0]}', 1, pygame.Color('White'))
+                time_render = normal_font.render(f'Ваш лучший результат выживаемости остался прежним: '
+                                                 f'{best_results[0]}', 1, pygame.Color('White'))
 
             if int(self.score) > int(best_results[1]):
-                score_render = pygame.font.Font(None, 40).render(f'Вы улучшили показатель собранных рублей с '
-                                                                 f'{best_results[1]} до {self.score}!', 1, pygame.Color('White'))
+                score_render = normal_font.render(f'Вы улучшили показатель собранных рублей с '
+                                                  f'{best_results[1]} до {self.score}!', 1, pygame.Color('White'))
                 self.db.update_score(self.player, self.score)
             else:
-                score_render = pygame.font.Font(None, 40).render(f'Вы умрёте от голода. Ваш лучший результат '
-                                                                 f'остался прежним: {best_results[1]}.', 1, pygame.Color('White'))
+                score_render = normal_font.render(f'Вы умрёте от голода. Ваш лучший результат остался прежним: '
+                                                  f'{best_results[1]}.', 1, pygame.Color('White'))
             time_rect = time_render.get_rect(center=(self.SIZE[0] // 2, self.SIZE[1] // 2 - 30))
             self.screen.blit(time_render, time_rect)
             score_rect = score_render.get_rect(center=(self.SIZE[0] // 2, self.SIZE[1] // 2 + 30))
@@ -272,9 +275,10 @@ class FinalScreen:
                                                              'кошка-баллы и пачку времени.', 1, pygame.Color('White'))
             final_rect = final_render.get_rect(center=(self.SIZE[0] // 2, self.SIZE[1] // 2))
             self.screen.blit(final_render, final_rect)
-        return_render = pygame.font.Font(None, 40).render('Вернуться в главное меню', 1, pygame.Color('White'))
+        return_render = normal_font.render('Вернуться в главное меню', 1, pygame.Color('White'))
         return_rect = return_render.get_rect(center=(self.SIZE[0] // 2, self.SIZE[1] // 2 + 200))
-        self.btns.append((return_rect.x, return_rect.x + return_rect.width, return_rect.y, return_rect.y + return_rect.height))
+        self.btns.append((return_rect.x, return_rect.x + return_rect.width, return_rect.y, return_rect.y +
+                          return_rect.height))
         self.screen.blit(return_render, return_rect)
 
         while True:
